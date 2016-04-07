@@ -14,7 +14,7 @@ window.onload = function()
     
     "use strict";
     
-    var game = new Phaser.Game( 800, 600, Phaser.AUTO, 'game', { preload: preload, create: create, update: update } );
+    var game = new Phaser.Game( 800, 600, Phaser.AUTO, 'game', { preload: preload, create: create, update: update,render: render } );
     
     
     
@@ -23,6 +23,7 @@ function preload()
         // Load an image and call it 'logo'.
         //game.load.image( 'logo', 'assets/phaser.png' );
     game.load.image( 'hole', 'assets/hole.png' );
+    game.load.image( 'exit', 'assets/hole.png' );
     game.load.image( 'player', 'assets/player.png' );
     game.load.image( 'part', 'assets/part.png' );
         game.load.audio('gameoover','assets/gameover.mp3');
@@ -30,7 +31,7 @@ function preload()
         game.load.audio('fall','assets/fall.wav');
         game.load.audio('levi','assets/levitate.wav');
         game.load.audio('music', 'assets/Bumpin Beasts.mp3');
-    game.load.image('end', 'assets/end_bg.png');
+        game.load.image('end', 'assets/end_bg.png');
         //gameoover,fall,levi,GET,music
 }
     
@@ -59,6 +60,44 @@ function preload()
     //
     var Parts;
     var Holes;
+    var holegroup;
+    //cave exit variables
+    var Exit;
+    var exit;
+    var exits;
+    
+    var isound = true;
+    var killholes = false;
+    var holetrue = false;
+    var levikey;
+    
+    Exit = function (index, game, player)
+{
+
+    var x = 400;
+    //var y = game.world.randomY;
+    var y = 10;
+
+    this.game = game;
+    this.player = player;
+    this.alive = true;
+
+    this.part = game.add.sprite(x, y, 'exit', 'exit');
+
+    //this.shadow.anchor.set(0.5);
+    this.part.anchor.set(0.5);
+    //this.turret.anchor.set(0.3, 0.5);
+
+    this.part.name = index.toString();
+    game.physics.enable(this.part, Phaser.Physics.ARCADE);
+    //this.cookie.body.immovable = false;
+    this.part.body.collideWorldBounds = true;
+    //this.cookie.body.bounce.setTo(1, 1);
+
+    //this.tank.angle = game.rnd.angle();
+
+    //game.physics.arcade.velocityFromRotation(this.tank.rotation, 100, this.tank.body.velocity);
+}
     
     //Function for collectibles. We want to be able to just spawn and delete them as necessary.
 Parts = function (index, game, player)
@@ -66,7 +105,7 @@ Parts = function (index, game, player)
 
     var x = game.world.randomX;
     //var y = game.world.randomY;
-    var y = 300;
+    var y = 800;
 
     this.game = game;
     this.player = player;
@@ -105,7 +144,7 @@ Parts = function (index, game, player)
     this.hole.anchor.set(0.5);
     //this.turret.anchor.set(0.3, 0.5);
 
-    //this.hole.name = index.toString();
+    this.hole.name = index.toString();
     game.physics.enable(this.hole, Phaser.Physics.ARCADE);
     //this.cookie.body.immovable = false;
     this.hole.body.collideWorldBounds = true;
@@ -138,29 +177,32 @@ Parts = function (index, game, player)
         /////////////////////////////////////////////////////////
         
 
-        game.stage.backgroundColor = '#ED8B03';
+        game.stage.backgroundColor = '#256926';
 
         Player = game.add.sprite(32, 32, 'player');
         game.physics.enable(Player, Phaser.Physics.ARCADE);
         Player.body.collideWorldBounds = true;
         ////excla = game.add.sprite(Player.x + 10,Player.y - 30, 'excla');
         ////excla.visible = false;
+        holegroup = game.add.group;
     
     holes = [];
-    HolesTotal = 4;
+    HolesTotal = 1;
     //enemiesAlive = 20;
     parts = [];
     PartsTotal = 1;
+    exits = [];
     
     for (var i = 0; i < HolesTotal; i++)
     {
         holes.push(new Holes(i, game, Player));
+        //holegroup.add(holes[i]);
         //new Cookie(5, game, Player);
     }
-    for (var i = 0; i < PartsTotal; i++)
-    {
-        parts.push(new Parts(i, game, Player));
-    }//Only need this for loop when making a part, AKA when in the InHole function, which we still need.
+    //for (var i = 0; i < PartsTotal; i++)
+    //{
+    //    parts.push(new Parts(i, game, Player));
+    //}
 
     //player.animations.add('left', [0, 1, 2, 3], 10, true);
     //player.animations.add('turn', [4], 20, true);
@@ -184,6 +226,8 @@ Parts = function (index, game, player)
     music = game.add.audio('music');
     music.loop = true;
     music.play();
+        
+    levikey = game.input.keyboard.addKey(Phaser.Keyboard.Q);
     
     endbg = game.add.sprite(0,0, 'end');
     endbg.visible = false;
@@ -219,20 +263,73 @@ Parts = function (index, game, player)
         Player.body.velocity.y = 0;//This one is important. Inside the holes, this will be a positive value, making player go down. Inside hole, levitation will add an upward force equal to it.
         updatecontrols();
 
-        for (var i = 0; i < holes.length; i++)
+        for (var i = 0; i < HolesTotal; i++)
         {
             if (holes[i].alive)
             {
-                game.physics.arcade.overlap(Player, holes[i].hole, inHole, null, this);
+                //washole = true;
+                //if (killholes == true)
+                //    {
+                //        holes[i].kill();
+                //    }
+                if (game.physics.arcade.overlap(Player, holes[i].hole))
+                    {
+                        for (var i = 0; i < 1; i++)
+                        {
+                            exits.push(new Exit(i, game, Player));
+                        }
+                        for (var i = 0; i < PartsTotal; i++)
+                        {
+                            parts.push(new Parts(i, game, Player));
+                        }//Only need this for loop when making a part, AKA when in the InHole function, which we still need.
+                    holetrue = true;
+                    }
+                game.physics.arcade.overlap(Player, holes[0].hole, inHole, null, this);
+                //holes[i].kill;
             }
         }
         for (var i = 0; i < parts.length; i++)//Repeat this code block for holes.
         {
             if (parts[i].alive)
             {
-                game.physics.arcade.overlap(Player, parts[i].part, gotPart(), null, this);
+                game.physics.arcade.overlap(Player, parts[i].part, gotPart, null, this);
             }
         }
+        //If inhole
+        if (holetrue == true)
+            {
+                Player.body.velocity.y = 300;
+                if (levikey.isDown)
+                    {
+                        //counteract the downward force, and play sound.
+                        Player.body.velocity.y = -300;
+                        if (levikey.isDown && isound == true)
+                        {
+                            levitate.play();
+                            isound = false;
+                        }
+                        if (!levikey.isDown && isound == false)
+                            isound = true;
+                        /*if (isound == true)
+                            {
+                                levitate.play();
+                                isound = false;
+                            }
+                        else
+                            isound = true;*/
+                    }
+              //  for(var i = 0; i < 1; i++)
+               //     {
+                //if (game.physics.arcade.overlap(Player, exits[0].exit))
+                 //   {
+                 //       //holetrue == false;
+                 //      game.stage.backgroundColor = '#256926';
+                        //exits[i].kill();
+                        
+                 //   }
+               //    }
+
+            }
     //timetxt.text = timestr + lives;
     //gscoretxt.text = gscorestr + score;
     //excla.x = Player.x + 10;
@@ -268,25 +365,28 @@ Parts = function (index, game, player)
     //scoretxt.visible = true;
     //scoretxt.bringToFront();
         }*/
+        //if (washole == true)
+         //   {
+         //       Player = game.add.sprite(32, 32, 'player');
+         //       game.physics.enable(Player, Phaser.Physics.ARCADE);
+         //       Player.body.collideWorldBounds = true;
+        //        washole = false;
+          //  }
     }
-    function inHole()
+    function inHole(Player, HOle)
     {
-        Player.x = Player.x + 200;
-        //holes[0].kill;
-        //holes[1].kill;
-        //holes[2].kill;
-        //holes[3].kill;
-        //holes.kill;
-        //for (var i = 0; i < holes.length; i++)
-        //{
-        //        holes[i].kill;
-        //}
-        this.kill;
+        holetrue = true;
+        game.stage.backgroundColor = '#5F5F5F';
+        HOle.kill();
+        Player.x = 400;
+        Player.y = 50;
+        fall.play();
     }
-    function gotPart()
+    function gotPart(Player, partt)
     {
-        parts.kill;
+        partt.kill();
         pieces++;
+        GET.play();
     }
     function updatecontrols()
     {
@@ -328,4 +428,15 @@ Parts = function (index, game, player)
         //new Cookie(5, game, Player);
         //}
     }
+    function render () {
+
+     game.debug.text("Pieces Collected: " +pieces, 32, 32);
+    game.debug.text("Arrow keys to move.", 32, 42);
+    game.debug.text("M to mute music.", 32, 52);
+        game.debug.text("N to resume music.", 32, 62);
+        game.debug.text("Q in cave levitates.", 32, 72);
+    // game.debug.body(player);
+    // game.debug.bodyInfo(player, 16, 24);
+
+}
 };
